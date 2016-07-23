@@ -7,6 +7,15 @@ if [ "$command" = "clone" ]; then
 	[ "${prefix}" = "${prefix%?}/" ] || prefix="$prefix/"
 fi
 
+while [ ! -e "${root:=$(pwd)}/repo.map" ] && [ "${root:=$(pwd)}" != "/" ]; do
+	root="$(dirname "$root")"
+done
+
+if [ ! -e "$root/repo.map" ]; then
+	echo "repo.map not found!" >&2
+	exit 1
+fi
+
 while read target src repo || [ -n "$target" ]; do
 	[ -n "$target" ] || [ "${target}" = "#${target#?}" ] || continue
 
@@ -14,8 +23,8 @@ while read target src repo || [ -n "$target" ]; do
 	if [ "$command" = "clone" ]; then
 		[ -n "$src" ] || src="$target"
 		[ -n "$repo" ] || repo="$prefix"
-		hg clone "$repo$src" "$target" "$@"
+		hg clone "$repo$src" "$root/$target" "$@"
 	else
-		hg -R "$target" "$command" "$@"
+		hg -R "$root/$target" "$command" "$@"
 	fi
-done < repo.map
+done < "$root/repo.map"
