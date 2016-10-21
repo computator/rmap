@@ -23,6 +23,7 @@ while read target src repo || [ -n "$target" ]; do
 	if [ "$command" = "clone" ]; then
 		[ -n "$src" ] || src="$target"
 		[ -n "$repo" ] || repo="$prefix"
+		[ -d "$root/$target" ] || mkdir -p "$root/$target"
 		hg clone "$repo$src" "$root/$target" "$@"
 	else
 		hg -R "$root/$target" "$command" "$@"
