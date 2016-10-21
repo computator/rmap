@@ -16,8 +16,8 @@ if [ ! -e "$root/repo.map" ]; then
 	exit 1
 fi
 
-exec 3<&0 # save current stdin for using below
-while read target src repo || [ -n "$target" ]; do
+exec  3< "$root/repo.map" # assign the map file to fd 3
+while read target src repo <&3 || [ -n "$target" ]; do
 	[ -n "$target" ] || [ "${target}" = "#${target#?}" ] || continue
 
 	echo "--- $target ---"
@@ -25,8 +25,8 @@ while read target src repo || [ -n "$target" ]; do
 		[ -n "$src" ] || src="$target"
 		[ -n "$repo" ] || repo="$prefix"
 		[ -d "$root/$target" ] || mkdir -p "$root/$target"
-		hg clone "$repo$src" "$root/$target" "$@" <&3
+		hg clone "$repo$src" "$root/$target" "$@"
 	else
-		hg -R "$root/$target" "$command" "$@" <&3
+		hg -R "$root/$target" "$command" "$@"
 	fi
-done < "$root/repo.map"
+done
