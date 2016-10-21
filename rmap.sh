@@ -16,6 +16,7 @@ if [ ! -e "$root/repo.map" ]; then
 	exit 1
 fi
 
+exec 3<&0 # save current stdin for using below
 while read target src repo || [ -n "$target" ]; do
 	[ -n "$target" ] || [ "${target}" = "#${target#?}" ] || continue
 
@@ -24,8 +25,8 @@ while read target src repo || [ -n "$target" ]; do
 		[ -n "$src" ] || src="$target"
 		[ -n "$repo" ] || repo="$prefix"
 		[ -d "$root/$target" ] || mkdir -p "$root/$target"
-		hg clone "$repo$src" "$root/$target" "$@"
+		hg clone "$repo$src" "$root/$target" "$@" <&3
 	else
-		hg -R "$root/$target" "$command" "$@"
+		hg -R "$root/$target" "$command" "$@" <&3
 	fi
 done < "$root/repo.map"
