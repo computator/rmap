@@ -1,4 +1,5 @@
 #!/bin/sh
+HG=${HG:-hg}
 command=${1:?Command is required}
 shift
 if [ "$command" = "clone" ]; then
@@ -25,8 +26,8 @@ while read target src repo <&3 || [ -n "$target" ]; do
 		[ -n "$src" ] || src="$target"
 		[ -n "$repo" ] || repo="$prefix"
 		[ -d "$root/$target" ] || mkdir -p "$root/$target"
-		hg clone "$repo$src" "$root/$target" "$@"
+		$HG clone "$repo$src" "$root/$target" "$@"
 	else
-		hg -R "$root/$target" "$command" "$@"
+		$HG -R "$root/$target" "$command" "$@"
 	fi
 done
