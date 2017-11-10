@@ -18,7 +18,10 @@ usage () {
 opts=$(getopt -n $(basename "$0") -s sh -o +rqh -l recursive,quiet,help -- "$@")
 [ $? -eq 0 ] || usage
 eval set -- "$opts"
-for opt; do [ "$opt" = "-h" -o "$opt" = "--help" ] && usage; [ "$opt" = "--" ] && break; done
+for opt; do
+	[ "$opt" = "-h" -o "$opt" = "--help" ] && usage;
+	[ "$opt" = "--" ] && break;
+done
 unset quiet
 while [ "$1" != "--" ]; do
 	case "$1" in
