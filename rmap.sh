@@ -5,45 +5,62 @@ MAPNAME=${MAPNAME:-.repomap}
 usage () {
 	self=$(basename "$0")
 	cat <<-HELP
-		Usage: $self [-q] [options] [--] clone <prefix> [arg] ...
-		       $self [-q] [options] [--] <command> [arg] ...
+		Usage: $self [-qr] [options] [--] clone <prefix> [arg] ...
+		       $self [-qr] [options] [--] <command> [arg] ...
 
 		Options:
 		  -q,  --quiet		Don't show the current repo header before running commands
+		  -r,  --recursive	Run command with mapfiles in subdirectories as well
 
 	HELP
 	exit 2
 }
 
-opts=$(getopt -n $(basename "$0") -s sh -o +rqh -l recursive,quiet,help -- "$@")
+opts=$(getopt -n $(basename "$0") -s sh -o +rqh -l recursive,quiet,help,recurse-internal -- "$@")
 [ $? -eq 0 ] || usage
 eval set -- "$opts"
+unset subrecurse
 for opt; do
+	[ "$opt" = "--recurse-internal" ] && subrecurse=1 && break;
 	[ "$opt" = "-h" -o "$opt" = "--help" ] && usage;
 	[ "$opt" = "--" ] && break;
 done
-unset quiet
-while [ "$1" != "--" ]; do
-	case "$1" in
-		-q|--quiet)
-			quiet=1 ;;
-	esac
-	shift
-done
-shift
 
-[ -n "$1" ] || usage
-command="$1"
-shift
-if [ "$command" = "clone" ]; then
-	prefix=${1:?Prefix is required}
+if [ $subrecurse ]; then
+	# while [ "$1" != "--" ]; do shift; done
+	# shift
+	# [ "$command" != "clone" ] || shift
+	eval set -- "$subopts"
+
+	ROOT=$(pwd)
+else
+	unset quiet recurse
+	while [ "$1" != "--" ]; do
+		case "$1" in
+			-q|--quiet)
+				quiet=1 ;;
+			-r|--recursive)
+				recurse=1 ;;
+		esac
+		shift
+	done
 	shift
-	[ "${prefix}" = "${prefix%?}/" ] || prefix="$prefix/"
+
+	[ -n "$1" ] || usage
+	command="$1"
+	shift
+	if [ "$command" = "clone" ]; then
+		prefix=${1:?Prefix is required}
+		shift
+		[ "${prefix}" = "${prefix%?}/" ] || prefix="$prefix/"
+	fi
+
+	while [ ! -e "${ROOT:=$(pwd)}/$MAPNAME" ] && [ "${ROOT:=$(pwd)}" != "/" ]; do
+		ROOT="$(dirname "$ROOT")"
+	done
+
+	[ $recurse ] && export quiet recurse command prefix
 fi
-
-while [ ! -e "${ROOT:=$(pwd)}/$MAPNAME" ] && [ "${ROOT:=$(pwd)}" != "/" ]; do
-	ROOT="$(dirname "$ROOT")"
-done
 
 if [ ! -e "$ROOT/$MAPNAME" ]; then
 	echo "$MAPNAME not found!" >&2
@@ -54,7 +71,7 @@ exec 3< "$ROOT/$MAPNAME" # assign the map file to fd 3
 while read target src repo <&3 || [ -n "$target" ]; do
 	[ -n "$target" ] || [ "${target}" = "#${target#?}" ] || continue
 
-	[ -z $quiet ] && echo "--- $target ---"
+	[ ! $quiet ] && echo "--- $target ---"
 	if [ "$command" = "clone" ]; then
 		[ -n "$src" ] || src="$target"
 		[ -n "$repo" ] || repo="$prefix"
@@ -64,3 +81,8 @@ while read target src repo <&3 || [ -n "$target" ]; do
 		$HG -R "$ROOT/$target" "$command" "$@"
 	fi
 done
+
+if [ ! $subrecurse ] && [ $recurse ]; then
+	export subopts="$@"
+	find -type f -name "$MAPNAME" -execdir "$0" --recurse-internal \;
+fi
