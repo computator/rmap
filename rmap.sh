@@ -8,16 +8,16 @@ if [ "$command" = "clone" ]; then
 	[ "${prefix}" = "${prefix%?}/" ] || prefix="$prefix/"
 fi
 
-while [ ! -e "${root:=$(pwd)}/repo.map" ] && [ "${root:=$(pwd)}" != "/" ]; do
-	root="$(dirname "$root")"
+while [ ! -e "${ROOT:=$(pwd)}/repo.map" ] && [ "${ROOT:=$(pwd)}" != "/" ]; do
+	ROOT="$(dirname "$ROOT")"
 done
 
-if [ ! -e "$root/repo.map" ]; then
+if [ ! -e "$ROOT/repo.map" ]; then
 	echo "repo.map not found!" >&2
 	exit 1
 fi
 
-exec  3< "$root/repo.map" # assign the map file to fd 3
+exec 3< "$ROOT/repo.map" # assign the map file to fd 3
 while read target src repo <&3 || [ -n "$target" ]; do
 	[ -n "$target" ] || [ "${target}" = "#${target#?}" ] || continue
 
@@ -25,9 +25,9 @@ while read target src repo <&3 || [ -n "$target" ]; do
 	if [ "$command" = "clone" ]; then
 		[ -n "$src" ] || src="$target"
 		[ -n "$repo" ] || repo="$prefix"
-		[ -d "$root/$target" ] || mkdir -p "$root/$target"
-		$HG clone "$repo$src" "$root/$target" "$@"
+		[ -d "$ROOT/$target" ] || mkdir -p "$ROOT/$target"
+		$HG clone "$repo$src" "$ROOT/$target" "$@"
 	else
-		$HG -R "$root/$target" "$command" "$@"
+		$HG -R "$ROOT/$target" "$command" "$@"
 	fi
 done
