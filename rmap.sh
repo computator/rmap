@@ -31,8 +31,6 @@ if [ $subrecurse ]; then
 	# shift
 	# [ "$command" != "clone" ] || shift
 	eval set -- "$subopts"
-
-	ROOT=$(pwd)
 else
 	unset quiet recurse
 	while [ "$1" != "--" ]; do
@@ -84,5 +82,18 @@ done
 
 if [ ! $subrecurse ] && [ $recurse ]; then
 	export subopts="$@"
-	find -type f -name "$MAPNAME" -execdir "$0" --recurse-internal \;
+	pfile=$(mktemp) || exit 1
+	trap "rm -f '$pfile'" EXIT
+	while true; do
+		nlines=$(wc -l "$pfile" | cut -f 1 -d " ")
+		for path in $(find -mindepth 2 -type f -name "$MAPNAME" ); do
+			path=$(dirname "$path")
+			grep -qFxe "$path" "$pfile" && continue
+			ROOT="$path" "$0" --recurse-internal
+			echo "$path" >> "$pfile"
+		done
+		[ $(wc -l "$pfile" | cut -f 1 -d " ") -gt $nlines ] || break
+	done
+	rm -f "$pfile"
+	trap - EXIT
 fi
