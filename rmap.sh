@@ -69,7 +69,13 @@ exec 3< "$ROOT/$MAPNAME" # assign the map file to fd 3
 while read target src repo <&3 || [ -n "$target" ]; do
 	[ -n "$target" ] || [ "${target}" = "#${target#?}" ] || continue
 
-	[ ! $quiet ] && echo "--- $target ---"
+	if [ ! $quiet ]; then
+		if [ $subrecurse ]; then
+			echo "--- ${ROOT#./}/$target ---"
+		else
+			echo "--- $target ---"
+		fi
+	fi
 	if [ "$command" = "clone" ]; then
 		[ -n "$src" ] || src="$target"
 		[ -n "$repo" ] || repo="$prefix"
