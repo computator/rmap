@@ -1,5 +1,6 @@
 #!/bin/sh
 HG=${HG:-hg}
+MAPNAME=${MAPNAME:-.repomap}
 command=${1:?Command is required}
 shift
 if [ "$command" = "clone" ]; then
@@ -8,16 +9,16 @@ if [ "$command" = "clone" ]; then
 	[ "${prefix}" = "${prefix%?}/" ] || prefix="$prefix/"
 fi
 
-while [ ! -e "${ROOT:=$(pwd)}/repo.map" ] && [ "${ROOT:=$(pwd)}" != "/" ]; do
+while [ ! -e "${ROOT:=$(pwd)}/$MAPNAME" ] && [ "${ROOT:=$(pwd)}" != "/" ]; do
 	ROOT="$(dirname "$ROOT")"
 done
 
-if [ ! -e "$ROOT/repo.map" ]; then
-	echo "repo.map not found!" >&2
+if [ ! -e "$ROOT/$MAPNAME" ]; then
+	echo "$MAPNAME not found!" >&2
 	exit 1
 fi
 
-exec 3< "$ROOT/repo.map" # assign the map file to fd 3
+exec 3< "$ROOT/$MAPNAME" # assign the map file to fd 3
 while read target src repo <&3 || [ -n "$target" ]; do
 	[ -n "$target" ] || [ "${target}" = "#${target#?}" ] || continue
 
