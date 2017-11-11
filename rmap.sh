@@ -78,7 +78,7 @@ while read target src repo <&3 || [ -n "$target" ]; do
 
 	if [ ! $quiet ]; then
 		if [ $subrecurse ]; then
-			echo "$a_bold$c_cyan=== $a_dim${ROOT#./} :$a_clr$a_bold$c_cyan $target ===$a_clr"
+			echo "$a_bold$c_cyan=== $a_dim${ROOT#"$orig_root"} :$a_clr$a_bold$c_cyan $target ===$a_clr"
 		else
 			echo "$a_bold$c_cyan=== $target ===$a_clr"
 		fi
@@ -95,6 +95,7 @@ done
 
 if [ ! $subrecurse ] && [ $recurse ]; then
 	export subopts="$@"
+	export orig_root="${ROOT%/}/"
 	pfile=$(mktemp) || exit 1
 	trap "rm -f '$pfile'" EXIT
 	while true; do
