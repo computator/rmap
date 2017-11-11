@@ -11,12 +11,13 @@ usage () {
 		Options:
 		  -q,  --quiet		Don't show the current repo header before running commands
 		  -r,  --recursive	Run command with mapfiles in subdirectories as well
+		       --color[=WHEN]	Colorize the current repo headers 'always', 'never', or 'auto'
 
 	HELP
 	exit 2
 }
 
-opts=$(getopt -n $(basename "$0") -s sh -o +rqh -l recursive,quiet,help,recurse-internal -- "$@")
+opts=$(getopt -n $(basename "$0") -s sh -o +rqh -l recursive,quiet,help,color::,recurse-internal -- "$@")
 [ $? -eq 0 ] || usage
 eval set -- "$opts"
 unset subrecurse
@@ -32,17 +33,32 @@ if [ $subrecurse ]; then
 	# [ "$command" != "clone" ] || shift
 	eval set -- "$subopts"
 else
-	unset quiet recurse
+	unset quiet recurse coloropt
 	while [ "$1" != "--" ]; do
 		case "$1" in
 			-q|--quiet)
 				quiet=1 ;;
 			-r|--recursive)
 				recurse=1 ;;
+			--color)
+				shift
+				if [ -z "$1" ]; then
+					coloropt="always"
+				else
+					coloropt="$1"
+				fi
+				;;
 		esac
 		shift
 	done
 	shift
+
+	unset color
+	if [ -z "$coloropt" -o "$coloropt" = "auto" ]; then
+		[ -t 1 ] && color=1
+	elif [ "$coloropt" = "always" ]; then
+		color=1
+	fi
 
 	[ -n "$1" ] || usage
 	command="$1"
@@ -57,7 +73,7 @@ else
 		ROOT="$(dirname "$ROOT")"
 	done
 
-	[ $recurse ] && export quiet recurse command prefix
+	[ $recurse ] && export quiet recurse color command prefix
 fi
 
 if [ ! -e "$ROOT/$MAPNAME" ]; then
@@ -65,12 +81,16 @@ if [ ! -e "$ROOT/$MAPNAME" ]; then
 	exit 1
 fi
 
-c_cyan=$(tput setaf 6)
-c_clr=$(tput op)
+unset c_cyan c_clr
+unset a_bold a_dim a_clr
+if [ $color ]; then
+	c_cyan=$(tput setaf 6)
+	c_clr=$(tput op)
 
-a_bold=$(tput bold)
-a_dim=$(tput dim)
-a_clr=$(tput sgr0)
+	a_bold=$(tput bold)
+	a_dim=$(tput dim)
+	a_clr=$(tput sgr0)
+fi
 
 exec 3< "$ROOT/$MAPNAME" # assign the map file to fd 3
 while read target src repo <&3 || [ -n "$target" ]; do
