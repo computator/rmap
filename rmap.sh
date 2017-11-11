@@ -99,7 +99,7 @@ if [ ! $subrecurse ] && [ $recurse ]; then
 	trap "rm -f '$pfile'" EXIT
 	while true; do
 		nlines=$(wc -l "$pfile" | cut -f 1 -d " ")
-		for path in $(find -mindepth 2 -type f -name "$MAPNAME" ); do
+		for path in $(find -depth -mindepth 2 -type f -name "$MAPNAME" | tac); do
 			path=$(dirname "$path")
 			grep -qFxe "$path" "$pfile" && continue
 			ROOT="$path" "$0" --recurse-internal
