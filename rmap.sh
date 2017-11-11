@@ -30,7 +30,8 @@ for opt; do
 done
 
 if [ $subrecurse ]; then
-	eval set -- "$subopts"
+	while [ "$1" != "--" ]; do shift; done
+	shift
 else
 	unset quiet recurse oneline coloropt
 	while [ "$1" != "--" ]; do
@@ -133,7 +134,6 @@ while read target src repo <&3 || [ -n "$target" ]; do
 done
 
 if [ ! $subrecurse ] && [ $recurse ]; then
-	export subopts="$@"
 	export orig_root="${ROOT%/}/"
 	pfile=$(mktemp) || exit 1
 	trap "rm -f '$pfile'" EXIT
@@ -142,7 +142,7 @@ if [ ! $subrecurse ] && [ $recurse ]; then
 		for path in $(find $ROOT -depth -mindepth 2 -type f -name "$MAPNAME" | tac); do
 			path=$(dirname "$path")
 			grep -qFxe "$path" "$pfile" && continue
-			ROOT="$path" "$0" --recurse-internal
+			ROOT="$path" "$0" --recurse-internal -- "$@"
 			echo "$path" >> "$pfile"
 		done
 		[ $(wc -l "$pfile" | cut -f 1 -d " ") -gt $nlines ] || break
