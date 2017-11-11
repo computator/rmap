@@ -65,15 +65,22 @@ if [ ! -e "$ROOT/$MAPNAME" ]; then
 	exit 1
 fi
 
+c_cyan=$(tput setaf 6)
+c_clr=$(tput op)
+
+a_bold=$(tput bold)
+a_dim=$(tput dim)
+a_clr=$(tput sgr0)
+
 exec 3< "$ROOT/$MAPNAME" # assign the map file to fd 3
 while read target src repo <&3 || [ -n "$target" ]; do
 	[ -n "$target" ] || [ "${target}" = "#${target#?}" ] || continue
 
 	if [ ! $quiet ]; then
 		if [ $subrecurse ]; then
-			echo "--- ${ROOT#./}/$target ---"
+			echo "$a_bold$c_cyan=== $a_dim${ROOT#./} :$a_clr$a_bold$c_cyan $target ===$a_clr"
 		else
-			echo "--- $target ---"
+			echo "$a_bold$c_cyan=== $target ===$a_clr"
 		fi
 	fi
 	if [ "$command" = "clone" ]; then
