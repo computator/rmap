@@ -5,19 +5,21 @@ MAPNAME=${MAPNAME:-.repomap}
 usage () {
 	self=$(basename "$0")
 	cat <<-HELP
-		Usage: $self [-qr] [options] [--] clone <prefix> [arg] ...
-		       $self [-qr] [options] [--] <command> [arg] ...
+		Usage: $self [-qr1] [options] [--] clone <prefix> [arg] ...
+		       $self [-qr1] [options] [--] <command> [arg] ...
 
 		Options:
 		  -q,  --quiet		Don't show the current repo header before running commands
 		  -r,  --recursive	Run command with mapfiles in subdirectories as well
+		  -1			One line format. Repo headers are easy to parse and are on the
+					  same line as the command's output.
 		       --color[=WHEN]	Colorize the current repo headers 'always', 'never', or 'auto'
 
 	HELP
 	exit 2
 }
 
-opts=$(getopt -n $(basename "$0") -s sh -o +rqh -l recursive,quiet,help,color::,recurse-internal -- "$@")
+opts=$(getopt -n $(basename "$0") -s sh -o +rq1h -l recursive,quiet,help,color::,recurse-internal -- "$@")
 [ $? -eq 0 ] || usage
 eval set -- "$opts"
 unset subrecurse
@@ -30,13 +32,15 @@ done
 if [ $subrecurse ]; then
 	eval set -- "$subopts"
 else
-	unset quiet recurse coloropt
+	unset quiet recurse oneline coloropt
 	while [ "$1" != "--" ]; do
 		case "$1" in
 			-q|--quiet)
 				quiet=1 ;;
 			-r|--recursive)
 				recurse=1 ;;
+			-1)
+				oneline=1 ;;
 			--color)
 				shift
 				if [ -z "$1" ]; then
@@ -70,7 +74,7 @@ else
 		ROOT="$(dirname "$ROOT")"
 	done
 
-	[ $recurse ] && export quiet recurse color command prefix
+	[ $recurse ] && export quiet recurse oneline color command prefix
 fi
 
 if [ ! -e "$ROOT/$MAPNAME" ]; then
@@ -94,19 +98,37 @@ while read target src repo <&3 || [ -n "$target" ]; do
 	[ -n "$target" ] || [ "${target}" = "#${target#?}" ] || continue
 
 	if [ ! $quiet ]; then
-		if [ $subrecurse ]; then
-			echo "$a_bold$c_cyan=== $a_dim${ROOT#"$orig_root"} :$a_clr$a_bold$c_cyan $target ===$a_clr"
+		if [ $oneline ]; then
+			if [ $subrecurse ]; then
+				echo -n "${ROOT#"$orig_root"}/$target:"
+			else
+				echo -n "$target:"
+			fi
 		else
-			echo "$a_bold$c_cyan=== $target ===$a_clr"
+			if [ $subrecurse ]; then
+				echo "$a_bold$c_cyan=== $a_dim${ROOT#"$orig_root"} :$a_clr$a_bold$c_cyan $target ===$a_clr"
+			else
+				echo "$a_bold$c_cyan=== $target ===$a_clr"
+			fi
 		fi
 	fi
 	if [ "$command" = "clone" ]; then
 		[ -n "$src" ] || src="$target"
 		[ -n "$repo" ] || repo="$prefix"
 		[ -d "$ROOT/$target" ] || mkdir -p "$ROOT/$target"
-		$HG clone "$repo$src" "$ROOT/$target" "$@"
+		if [ $oneline ]; then
+			# use echo to make sure a newline is added
+			echo $($HG clone "$repo$src" "$ROOT/$target" "$@")
+		else
+			$HG clone "$repo$src" "$ROOT/$target" "$@"
+		fi
 	else
-		$HG -R "$ROOT/$target" "$command" "$@"
+		if [ $oneline ]; then
+			# use echo to make sure a newline is added
+			echo $($HG -R "$ROOT/$target" "$command" "$@")
+		else
+			$HG -R "$ROOT/$target" "$command" "$@"
+		fi
 	fi
 done
 
