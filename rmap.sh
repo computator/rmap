@@ -28,9 +28,6 @@ for opt; do
 done
 
 if [ $subrecurse ]; then
-	# while [ "$1" != "--" ]; do shift; done
-	# shift
-	# [ "$command" != "clone" ] || shift
 	eval set -- "$subopts"
 else
 	unset quiet recurse coloropt
