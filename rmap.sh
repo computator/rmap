@@ -119,14 +119,14 @@ while read target src repo <&3 || [ -n "$target" ]; do
 		[ -d "$ROOT/$target" ] || mkdir -p "$ROOT/$target"
 		if [ $oneline ]; then
 			# use echo to make sure a newline is added
-			echo $($HG clone "$repo$src" "$ROOT/$target" "$@")
+			echo "$($HG clone "$repo$src" "$ROOT/$target" "$@")"
 		else
 			$HG clone "$repo$src" "$ROOT/$target" "$@"
 		fi
 	else
 		if [ $oneline ]; then
 			# use echo to make sure a newline is added
-			echo $($HG -R "$ROOT/$target" "$command" "$@")
+			echo "$($HG -R "$ROOT/$target" "$command" "$@")"
 		else
 			$HG -R "$ROOT/$target" "$command" "$@"
 		fi
